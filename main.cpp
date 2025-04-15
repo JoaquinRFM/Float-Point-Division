@@ -49,7 +49,7 @@ vector<bool> mergeBinary(bool sign, vector<bool> binaryExponent, vector<bool> bi
     return binaryMerged;
 }
 
-vector<bool> floatToBinary(float& number) {
+vector<bool> floatToBinary(float number) {
     vector<bool> binaryFloat(32, false);
     bool sign = number < 0;
     float absNumber = abs(number);
@@ -98,45 +98,29 @@ int verify(vector<bool> binaryFloat) {
         if (binaryFloat[i] == 1) {
             return 2; //Valor NaN
         }
-        return 3; //Valor Infinito
     }
-    return 0;
+    return 3; //Valor Infinito
 }
 
 void printBinaryFloat(vector<bool> binaryFloat, float number) {
-    switch (verify(binaryFloat)) {
-        case 1:
-            cout << number << " en binario es: ";
-            cout << binaryFloat[0] << " ";
-            for (int i = 1; i < 9; i++) {
-                cout << binaryFloat[i];
-            }
-            cout << " ";
-            for (int i = 9; i < 32; i++) {
-                cout << binaryFloat[i];
-            }
-            cout << endl;
-            break;
-        case 2:
-            cout << "Valor NaN" <<endl;
-            break;
-        case 3:
-            if (binaryFloat[0]) {
-                cout << "-";
-            } else {
-                cout << "+";
-            }
-            cout << "Infinito" << endl;
-            break;
+    cout << number << " en binario es: ";
+    cout << binaryFloat[0] << " ";
+    for (int i = 1; i < 9; i++) {
+        cout << binaryFloat[i];
     }
+    cout << " ";
+    for (int i = 9; i < 32; i++) {
+        cout << binaryFloat[i];
+    }
+    cout << endl;
 }
 
-int exponentToInt(vector<bool> binaryNumber){
-    int number = 0;
-    for (int i = 8; i > 0; i--){
-        number += pow(2, 8 - i);
+int exponentToInt(const vector<bool>& binaryNumber) {
+    int exponent = 0;
+    for(int i = 1; i <= 8; i++) {
+        exponent = (exponent << 1) | binaryNumber[i];
     }
-    return number;
+    return exponent;
 }
 
 vector<bool> significandImplicit(vector<bool> binaryNumber){
@@ -148,9 +132,50 @@ vector<bool> significandImplicit(vector<bool> binaryNumber){
     return significand;
 }
 
-vector<bool> significandDivision(vector<bool> significand1, vector<bool> significand2){
-    vector<bool> significandResult;
-    return significandResult;
+vector<bool> divisionSignificand(vector<bool> significand1, vector<bool> significand2) {
+    vector<bool> quotient(23, false);
+
+    // Convert significands to decimal for division
+    double s1 = 1.0; // Implicit 1
+    double s2 = 1.0;
+    double power = 0.5;
+
+    for (int i = 1; i < significand1.size(); i++) {
+        if (significand1[i]) s1 += power;
+        power /= 2.0;
+    }
+
+    power = 0.5;
+    for (int i = 1; i < significand2.size(); i++) {
+        if (significand2[i]) s2 += power;
+        power /= 2.0;
+    }
+
+    // Perform division
+    double result = s1 / s2;
+
+    // Handle normalization
+    int shift = 0;
+    while (result >= 2.0) {
+        result /= 2.0;
+        shift++;
+    }
+    while (result < 1.0 && result != 0) {
+        result *= 2.0;
+        shift--;
+    }
+
+    // Convert quotient back to binary
+    if (result >= 1.0) result -= 1.0; // Remove implicit 1
+    for (int i = 0; i < 23 && result > 0; i++) {
+        result *= 2.0;
+        if (result >= 1.0) {
+            quotient[i] = true;
+            result -= 1.0;
+        }
+    }
+
+    return quotient;
 }
 
 vector<bool> divisionFloatPoint(float number1, vector<bool> binaryNumber1, float number2, vector<bool> binaryNumber2){
@@ -162,7 +187,7 @@ vector<bool> divisionFloatPoint(float number1, vector<bool> binaryNumber1, float
     vector<bool> finalExponent = exponendToBinary(exponent1 - exponent2 + 127);
     vector<bool> significand1 = significandImplicit(binaryNumber1);
     vector<bool> significand2 = significandImplicit(binaryNumber2);
-    vector<bool> finalSignificand = significandDivision(significand1, significand2);
+    vector<bool> finalSignificand = divisionSignificand(significand1, significand2);
     vector<bool> resultBinary = mergeBinary(finalSign, finalExponent, finalSignificand);
     return resultBinary;
 }
@@ -175,6 +200,6 @@ int main() {
     vector<bool> binaryNumber2 = floatToBinary(number2);
     printBinaryFloat(binaryNumber2, number2);
     vector<bool> binaryResult = divisionFloatPoint(number1, binaryNumber1, number2, binaryNumber2);
-    //printBinaryFloat(binaryResult, 0);
+    printBinaryFloat(binaryResult, 0);
 
 }
