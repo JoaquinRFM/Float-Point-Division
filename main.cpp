@@ -133,28 +133,20 @@ vector<bool> significandImplicit(vector<bool> binaryNumber){
 }
 
 vector<bool> divisionSignificand(vector<bool> significand1, vector<bool> significand2) {
-    vector<bool> quotient(23, false);
-
-    // Convert significands to decimal for division
-    double s1 = 1.0; // Implicit 1
+    vector<bool> resultBinary(23, false);
+    double s1 = 1.0;
     double s2 = 1.0;
     double power = 0.5;
-
     for (int i = 1; i < significand1.size(); i++) {
         if (significand1[i]) s1 += power;
         power /= 2.0;
     }
-
     power = 0.5;
     for (int i = 1; i < significand2.size(); i++) {
         if (significand2[i]) s2 += power;
         power /= 2.0;
     }
-
-    // Perform division
     double result = s1 / s2;
-
-    // Handle normalization
     int shift = 0;
     while (result >= 2.0) {
         result /= 2.0;
@@ -164,18 +156,15 @@ vector<bool> divisionSignificand(vector<bool> significand1, vector<bool> signifi
         result *= 2.0;
         shift--;
     }
-
-    // Convert quotient back to binary
-    if (result >= 1.0) result -= 1.0; // Remove implicit 1
+    if (result >= 1.0) result -= 1.0;
     for (int i = 0; i < 23 && result > 0; i++) {
         result *= 2.0;
         if (result >= 1.0) {
-            quotient[i] = true;
+            resultBinary[i] = true;
             result -= 1.0;
         }
     }
-
-    return quotient;
+    return resultBinary;
 }
 
 vector<bool> divisionFloatPoint(float number1, vector<bool> binaryNumber1, float number2, vector<bool> binaryNumber2){
@@ -192,14 +181,50 @@ vector<bool> divisionFloatPoint(float number1, vector<bool> binaryNumber1, float
     return resultBinary;
 }
 
+float binaryVectorToFloat(const std::vector<bool>& bits) {
+    bool sign = bits[0];
+    int exponent = 0;
+    for (int i = 0; i < 8; ++i) {
+        exponent = exponent * 2 + (bits[1 + i] ? 1 : 0);
+    }
+    float significand = 0.0f;
+    float bitValue = 0.5f;
+    for (int i = 0; i < 23; ++i) {
+        if (bits[9 + i]) {
+            significand += bitValue;
+        }
+        bitValue *= 0.5f;
+    }
+    if (exponent == 255) {
+        if (significand == 0.0f) {
+            return sign ? -INFINITY : INFINITY;
+        } else {
+            return NAN;
+        }
+    }
+    if (exponent == 0) {
+        exponent = -126;
+    } else {
+        significand += 1.0f;
+        exponent -= 127;
+    }
+    float result = (sign ? -1.0f : 1.0f) * significand * pow(2.0f, exponent);
+    return result;
+}
+
 int main() {
     float number1, number2;
     getData(number1, number2);
+    cout << "-----------------------------------------------" << endl;
     vector<bool> binaryNumber1 = floatToBinary(number1);
     printBinaryFloat(binaryNumber1, number1);
     vector<bool> binaryNumber2 = floatToBinary(number2);
     printBinaryFloat(binaryNumber2, number2);
     vector<bool> binaryResult = divisionFloatPoint(number1, binaryNumber1, number2, binaryNumber2);
-    printBinaryFloat(binaryResult, 0);
+    float result = binaryVectorToFloat(binaryResult);
+    cout << "-----------------------------------------------" << endl;
+    cout << number1 << " / " << number2 << " = ";
+    printBinaryFloat(binaryResult, result);
+
 
 }
